@@ -3,6 +3,7 @@ package dmcategories
 import android.content.Context
 import android.view.animation.RotateAnimation
 import com.aliucord.Utils
+import com.aliucord.wrappers.ChannelWrapper.Companion.id
 import com.discord.stores.StoreStream
 import com.discord.views.CheckedSetting
 import com.discord.widgets.channels.list.WidgetChannelsListAdapter
@@ -37,6 +38,16 @@ object Util {
         channelIds: List<Long>,
         channels: Map<Long, ChannelListItemPrivate>
     ): List<ChannelListItemPrivate> = channelIds.mapNotNull { channels[it] }
+
+    fun categoryChannels(
+        mode: DmOrderMode,
+        categoryChannelIds: List<Long>,
+        privateChannels: List<ChannelListItemPrivate>,
+        channelById: Map<Long, ChannelListItemPrivate>
+    ): List<ChannelListItemPrivate> = when (mode) {
+        DmOrderMode.STATIC -> channelsInOrder(categoryChannelIds, channelById)
+        DmOrderMode.LAST_ACTIVITY -> privateChannels.filter { channel -> channel.channel.id in categoryChannelIds }
+    }
 
     fun updateChannels() = StoreStream.`access$getDispatcher$p`(StoreStream.getPresences().stream).schedule {
         StoreStream.getMessagesMostRecent().markChanged()

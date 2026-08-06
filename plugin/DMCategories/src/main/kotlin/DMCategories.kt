@@ -19,6 +19,7 @@ import com.discord.widgets.channels.list.items.ChannelListItemPrivate
 import com.google.gson.reflect.TypeToken
 import com.lytefast.flexinput.R
 import dmcategories.DMCategory
+import dmcategories.DmOrderMode
 import dmcategories.PluginSettings
 import dmcategories.Util
 import dmcategories.items.*
@@ -41,6 +42,7 @@ class DMCategories : Plugin() {
     private val SettingsAPI.showSelected: Boolean by settings.delegate(true)
     private val SettingsAPI.showUnread: Boolean by settings.delegate(false)
     private val SettingsAPI.hideEmpty: Boolean by settings.delegate(false)
+    private var SettingsAPI.dmOrderMode: Int by settings.delegate(DmOrderMode.DEFAULT.value)
 
     init {
         settingsTab = SettingsTab(PluginSettings::class.java, SettingsTab.Type.BOTTOM_SHEET).withArgs(settings)
@@ -141,13 +143,17 @@ class DMCategories : Plugin() {
 
             val privateChannels = model.items.filterIsInstance<ChannelListItemPrivate>()
             val channelById = privateChannels.associateBy { channel -> channel.channel.id }
-            val pinnedChannelIds = Util.getPinnedChannelIds()
-            val pinnedChannelIdSet = pinnedChannelIds.toSet()
+            val orderMode = DmOrderMode.fromValue(settings.dmOrderMode)
             val categorizedChannelIds = mutableSetOf<Long>()
 
             val categoryItems = buildList(100) {
                 userCategories.forEach { category ->
-                    val channels = Util.channelsInOrder(category.channelIds, channelById)
+                    val channels = Util.categoryChannels(
+                        orderMode,
+                        category.channelIds,
+                        privateChannels,
+                        channelById
+                    )
                     categorizedChannelIds.addAll(channels.map { channel -> channel.channel.id })
 
                     if (settings.hideEmpty && channels.isEmpty()) return@forEach
@@ -172,19 +178,33 @@ class DMCategories : Plugin() {
                 }
             } + ChannelListItemDivider
 
-            val uncategorizedPinned = Util.channelsInOrder(
-                pinnedChannelIds.filter { channelId -> channelId !in categorizedChannelIds },
-                channelById
-            )
-            val uncategorizedUnpinned = privateChannels.filter { channel ->
-                channel.channel.id !in categorizedChannelIds && channel.channel.id !in pinnedChannelIdSet
+            val uncategorizedChannels = when (orderMode) {
+                DmOrderMode.STATIC -> {
+                    val pinnedChannelIds = Util.getPinnedChannelIds()
+                    val pinnedChannelIdSet = pinnedChannelIds.toSet()
+                    val uncategorizedPinned = Util.channelsInOrder(
+                        pinnedChannelIds.filter { channelId -> channelId !in categorizedChannelIds },
+                        channelById
+                    )
+                    val uncategorizedUnpinned = privateChannels.filter { channel ->
+                        channel.channel.id !in categorizedChannelIds && channel.channel.id !in pinnedChannelIdSet
+                    }
+                    uncategorizedPinned to uncategorizedUnpinned
+                }
+
+                DmOrderMode.LAST_ACTIVITY -> {
+                    val uncategorized = privateChannels.filter { channel ->
+                        channel.channel.id !in categorizedChannelIds
+                    }
+                    emptyList<ChannelListItemPrivate>() to uncategorized
+                }
             }
             val otherItems = model.items.filter { item -> item !is ChannelListItemPrivate }
 
             model.items.clear()
-            model.items.addAll(uncategorizedPinned)
+            model.items.addAll(uncategorizedChannels.first)
             model.items.addAll(categoryItems)
-            model.items.addAll(uncategorizedUnpinned)
+            model.items.addAll(uncategorizedChannels.second)
             model.items.addAll(otherItems)
         }
 
