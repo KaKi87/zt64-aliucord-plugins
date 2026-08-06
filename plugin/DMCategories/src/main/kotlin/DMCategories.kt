@@ -83,42 +83,19 @@ class DMCategories : Plugin() {
 
             val root = getBinding().root as NestedScrollView
             val ctx = root.context
+            val menuLayout = root.getChildAt(0) as LinearLayout
 
-            (root.getChildAt(0) as LinearLayout).addView(
-                TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Icon).apply {
-                    categories
-                        .find { category -> category.channelIds.contains(model.channel.id) }
-                        ?.let { category ->
-                            text = "Remove from category"
-                            setOnClickListener {
-                                dismiss()
-
-                                category.channelIds.remove(model.channel.id)
-
-                                Util.updateChannels()
-
-                                saveCategories()
-                            }
-                            setCompoundDrawablesWithIntrinsicBounds(
-                                ContextCompat
-                                    .getDrawable(ctx, R.e.ic_remove_circle_outline_red_24dp)!!
-                                    .mutate()
-                                    .apply {
-                                        setTint(ColorCompat.getThemedColor(ctx, R.b.colorInteractiveNormal))
-                                    },
-                                null,
-                                null,
-                                null
-                            )
-                        } ?: run {
-                        text = "Set Category"
+            fun addMenuAction(text: String, drawable: Int, onClick: () -> Unit) {
+                menuLayout.addView(
+                    TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Icon).apply {
+                        this.text = text
                         setOnClickListener {
                             dismiss()
-                            CategoriesSheet(model.channel.id).show(parentFragmentManager, "Categories")
+                            onClick()
                         }
                         setCompoundDrawablesWithIntrinsicBounds(
                             ContextCompat
-                                .getDrawable(ctx, R.e.ic_group_add_white_24dp)!!
+                                .getDrawable(ctx, drawable)!!
                                 .mutate()
                                 .apply {
                                     setTint(ColorCompat.getThemedColor(ctx, R.b.colorInteractiveNormal))
@@ -128,8 +105,40 @@ class DMCategories : Plugin() {
                             null
                         )
                     }
+                )
+            }
+
+            categories
+                .find { category -> category.channelIds.contains(model.channel.id) }
+                ?.let { category ->
+                    val channelIndex = category.channelIds.indexOf(model.channel.id)
+
+                    if (channelIndex > 0) {
+                        addMenuAction("Move up", R.e.ic_arrow_up_24dp) {
+                            if (Util.moveChannelInCategory(category, model.channel.id, -1)) {
+                                saveCategories()
+                                Util.updateChannels()
+                            }
+                        }
+                    }
+
+                    if (channelIndex < category.channelIds.lastIndex) {
+                        addMenuAction("Move down", R.e.ic_arrow_down_24dp) {
+                            if (Util.moveChannelInCategory(category, model.channel.id, 1)) {
+                                saveCategories()
+                                Util.updateChannels()
+                            }
+                        }
+                    }
+
+                    addMenuAction("Remove from category", R.e.ic_remove_circle_outline_red_24dp) {
+                        category.channelIds.remove(model.channel.id)
+                        saveCategories()
+                        Util.updateChannels()
+                    }
+                } ?: addMenuAction("Set Category", R.e.ic_group_add_white_24dp) {
+                    CategoriesSheet(model.channel.id).show(parentFragmentManager, "Categories")
                 }
-            )
         }
 
         @OptIn(ExperimentalStdlibApi::class)

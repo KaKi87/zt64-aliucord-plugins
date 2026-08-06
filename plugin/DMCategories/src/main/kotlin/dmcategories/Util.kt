@@ -39,6 +39,17 @@ object Util {
         channels: Map<Long, ChannelListItemPrivate>
     ): List<ChannelListItemPrivate> = channelIds.mapNotNull { channels[it] }
 
+    fun moveChannelInCategory(category: DMCategory, channelId: Long, delta: Int): Boolean {
+        val index = category.channelIds.indexOf(channelId)
+        if (index == -1) return false
+
+        val newIndex = index + delta
+        if (newIndex !in category.channelIds.indices) return false
+
+        category.channelIds.add(newIndex, category.channelIds.removeAt(index))
+        return true
+    }
+
     fun categoryChannels(
         mode: DmOrderMode,
         categoryChannelIds: List<Long>,
