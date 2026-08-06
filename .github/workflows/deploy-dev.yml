@@ -17,24 +17,17 @@ on:
       - "**.gradle.kts"
 
 permissions:
+  actions: write
   contents: write
 
 jobs:
   deploy-dev:
-    name: Build & Deploy Dev Plugins
+    name: Build & Publish Dev Plugins
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          path: "src"
-
-      - name: Checkout dev-builds
-        uses: actions/checkout@v6
-        with:
-          ref: "dev-builds"
-          path: "dev-builds"
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup JDK 21
         uses: actions/setup-java@v5
@@ -49,29 +42,68 @@ jobs:
 
       - name: Build plugins
         run: |
-          cd "$GITHUB_WORKSPACE/src"
           chmod +x ./gradlew
           ./gradlew make generateUpdaterJson
-          rm -f "$GITHUB_WORKSPACE/dev-builds"/*.zip
-          cp plugin/*/build/outputs/*.zip "$GITHUB_WORKSPACE/dev-builds"
-          cp build/outputs/updater.json "$GITHUB_WORKSPACE/dev-builds"
-          sed -i 's|/builds/|/dev-builds/|g' "$GITHUB_WORKSPACE/dev-builds/updater.json"
+
+      - name: Prepare release files
+        run: |
+          mkdir -p dist
+          cp plugin/*/build/outputs/*.zip dist/
+          cp build/outputs/updater.json dist/
+          sed -i "s|https://raw.githubusercontent.com/[^/]*/[^/]*/builds/|https://github.com/${GITHUB_REPOSITORY}/releases/download/dev/|g" dist/updater.json
+
+      - name: Install artifact client
+        run: npm install --no-save @actions/artifact@6
 
       - name: Upload plugin artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
-          name: plugins-dev-${{ github.run_number }}
-          if-no-files-found: error
-          path: ${{ github.workspace }}/src/plugin/*/build/outputs/*.zip
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { DefaultArtifactClient } = require(`${process.env.GITHUB_WORKSPACE}/node_modules/@actions/artifact`);
 
-      - name: Push dev-builds
-        run: |
-          cd "$GITHUB_WORKSPACE/dev-builds"
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add .
-          git commit -m "Build $GITHUB_SHA" || exit 0
-          git push
+            const client = new DefaultArtifactClient();
+            const workspace = process.env.GITHUB_WORKSPACE;
+            const pluginDir = path.join(workspace, 'plugin');
+
+            const plugins = fs.readdirSync(pluginDir, { withFileTypes: true })
+              .filter((entry) => entry.isDirectory())
+              .map((entry) => entry.name);
+
+            if (plugins.length === 0) {
+              throw new Error('No plugins found');
+            }
+
+            for (const plugin of plugins) {
+              const zip = path.join(pluginDir, plugin, 'build', 'outputs', `${plugin}.zip`);
+              if (!fs.existsSync(zip)) {
+                throw new Error(`Missing build output: ${zip}`);
+              }
+
+              console.log(`Uploading ${plugin}`);
+              const { id, size } = await client.uploadArtifact(
+                plugin,
+                [zip],
+                workspace,
+                { skipArchive: true }
+              );
+              console.log(`Uploaded ${plugin} (id: ${id}, bytes: ${size})`);
+            }
+
+            const updater = path.join(workspace, 'dist', 'updater.json');
+            if (!fs.existsSync(updater)) {
+              throw new Error(`Missing updater.json: ${updater}`);
+            }
+
+            console.log('Uploading updater.json');
+            const { id, size } = await client.uploadArtifact(
+              'updater.json',
+              [updater],
+              workspace,
+              { skipArchive: true }
+            );
+            console.log(`Uploaded updater.json (id: ${id}, bytes: ${size})`);
 
       - name: Publish prerelease
         uses: softprops/action-gh-release@v2
@@ -82,5 +114,5 @@ jobs:
           make_latest: false
           generate_release_notes: true
           files: |
-            ${{ github.workspace }}/dev-builds/*.zip
-            ${{ github.workspace }}/dev-builds/updater.json
+            ${{ github.workspace }}/dist/*.zip
+            ${{ github.workspace }}/dist/updater.json
