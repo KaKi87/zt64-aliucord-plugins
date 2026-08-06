@@ -42,9 +42,14 @@ jobs:
           chmod +x ./gradlew
           ./gradlew make
 
+      - name: Set artifact name
+        run: |
+          safe_ref_name="${GITHUB_REF_NAME//\//-}"
+          echo "ARTIFACT_NAME=plugins-${safe_ref_name}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
       - name: Upload plugin artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: plugins-${{ replace(github.ref_name, '/', '-') }}-${{ github.run_number }}
+          name: ${{ env.ARTIFACT_NAME }}
           if-no-files-found: error
           path: plugin/*/build/outputs/*.zip
