@@ -1,8 +1,12 @@
-version = "1.2.0"
+version = "1.2.1"
 description = "Adds the ability to create categories for DMs, which will come first in the list"
 
 aliucord.changelog.set(
     """
+    # 1.2.1
+    * Pinned DMs now keep their static order instead of being sorted by last activity
+    * DMs inside categories now follow the category channel order
+
     # 1.2.0
     * Added option to hide categories if they have no channels
 

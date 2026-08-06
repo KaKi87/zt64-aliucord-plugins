@@ -135,21 +135,24 @@ class DMCategories : Plugin() {
             // Only run if this is the DMs tab
             if (model.selectedGuild != null) return@before
 
-            // I hate this but it works
-            if (categories.none { (userId) -> userId == Util.getCurrentId() }) return@before
+            val currentUserId = Util.getCurrentId()
+            val userCategories = categories.filter { category -> category.userId == currentUserId }
+            if (userCategories.isEmpty()) return@before
 
             val privateChannels = model.items.filterIsInstance<ChannelListItemPrivate>()
-            val items = buildList(100) {
-                categories.forEach { category ->
-                    val channels = privateChannels.filter { channel ->
-                        channel.channel.id in category.channelIds
-                    }
+            val channelById = privateChannels.associateBy { channel -> channel.channel.id }
+            val pinnedChannelIds = Util.getPinnedChannelIds()
+            val pinnedChannelIdSet = pinnedChannelIds.toSet()
+            val categorizedChannelIds = mutableSetOf<Long>()
+
+            val categoryItems = buildList(100) {
+                userCategories.forEach { category ->
+                    val channels = Util.channelsInOrder(category.channelIds, channelById)
+                    categorizedChannelIds.addAll(channels.map { channel -> channel.channel.id })
 
                     if (settings.hideEmpty && channels.isEmpty()) return@forEach
 
                     add(ChannelListItemDMCategory(category))
-
-                    model.items.removeAll(channels)
 
                     addAll(
                         elements = if (category.collapsed) {
@@ -169,7 +172,20 @@ class DMCategories : Plugin() {
                 }
             } + ChannelListItemDivider
 
-            model.items.addAll(0, items)
+            val uncategorizedPinned = Util.channelsInOrder(
+                pinnedChannelIds.filter { channelId -> channelId !in categorizedChannelIds },
+                channelById
+            )
+            val uncategorizedUnpinned = privateChannels.filter { channel ->
+                channel.channel.id !in categorizedChannelIds && channel.channel.id !in pinnedChannelIdSet
+            }
+            val otherItems = model.items.filter { item -> item !is ChannelListItemPrivate }
+
+            model.items.clear()
+            model.items.addAll(uncategorizedPinned)
+            model.items.addAll(categoryItems)
+            model.items.addAll(uncategorizedUnpinned)
+            model.items.addAll(otherItems)
         }
 
         patcher.after<WidgetChannelsListAdapter>(
