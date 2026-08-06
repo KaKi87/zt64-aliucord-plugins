@@ -1,8 +1,11 @@
-version = "1.2.3"
+version = "1.2.4"
 description = "Adds the ability to create categories for DMs, which will come first in the list"
 
 aliucord.changelog.set(
     """
+    # 1.2.4
+    * Added Move up and Move down actions for categorized DMs
+
     # 1.2.3
     * Fixed DM ordering radio buttons not deselecting the previous option
 
