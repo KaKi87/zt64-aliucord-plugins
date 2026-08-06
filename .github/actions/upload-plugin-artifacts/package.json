@@ -1,0 +1,7 @@
+{
+  "name": "upload-plugin-artifacts",
+  "private": true,
+  "dependencies": {
+    "@actions/artifact": "^2.3.2"
+  }
+}

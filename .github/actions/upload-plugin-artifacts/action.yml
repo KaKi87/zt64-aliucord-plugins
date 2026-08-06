@@ -1,0 +1,6 @@
+name: Upload plugin artifacts
+description: Upload each built plugin zip as its own GitHub Actions artifact
+
+runs:
+  using: node20
+  main: index.js

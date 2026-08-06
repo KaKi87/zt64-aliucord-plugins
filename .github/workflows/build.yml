@@ -22,6 +22,9 @@ jobs:
     name: Build Plugins
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      actions: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -43,36 +46,4 @@ jobs:
           ./gradlew make
 
       - name: Upload plugin artifacts
-        run: |
-          npm install --no-save @actions/artifact@2
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const { DefaultArtifactClient } = require('@actions/artifact');
-
-          const client = new DefaultArtifactClient();
-          const plugins = fs.readdirSync('plugin', { withFileTypes: true })
-            .filter((entry) => entry.isDirectory())
-            .map((entry) => entry.name);
-
-          if (plugins.length === 0) {
-            console.error('No plugins found');
-            process.exit(1);
-          }
-
-          (async () => {
-            for (const plugin of plugins) {
-              const zip = path.join('plugin', plugin, 'build', 'outputs', `${plugin}.zip`);
-              if (!fs.existsSync(zip)) {
-                throw new Error(`Missing build output: ${zip}`);
-              }
-
-              console.log(`Uploading ${plugin}`);
-              const { id, size } = await client.uploadArtifact(plugin, [zip], process.cwd());
-              console.log(`Uploaded ${plugin} (id: ${id}, bytes: ${size})`);
-            }
-          })().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
-          NODE
+        uses: ./.github/actions/upload-plugin-artifacts
