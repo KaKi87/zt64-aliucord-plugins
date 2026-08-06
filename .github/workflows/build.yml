@@ -6,13 +6,6 @@ concurrency:
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/**"
-      - "gradle.properties"
-      - "gradle/**"
-      - "plugin/**"
-      - "**.gradle.kts"
   push:
     branches-ignore:
       - main
@@ -52,6 +45,6 @@ jobs:
       - name: Upload plugin artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: plugins-${{ github.ref_name }}-${{ github.run_number }}
+          name: plugins-${{ replace(github.ref_name, '/', '-') }}-${{ github.run_number }}
           if-no-files-found: error
           path: plugin/*/build/outputs/*.zip
