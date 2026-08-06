@@ -18,10 +18,29 @@ on:
       - "**.gradle.kts"
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.plugins.outputs.list }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: List plugins
+        id: plugins
+        run: |
+          list=$(find plugin -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+
   build:
-    name: Build Plugins
+    name: Build ${{ matrix.plugin }}
+    needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.setup.outputs.plugins) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -37,19 +56,14 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
-      - name: Build plugins
+      - name: Build plugin
         run: |
           chmod +x ./gradlew
-          ./gradlew make
+          ./gradlew ":plugin:${{ matrix.plugin }}:make"
 
-      - name: Set artifact name
-        run: |
-          safe_ref_name="${GITHUB_REF_NAME//\//-}"
-          echo "ARTIFACT_NAME=plugins-${safe_ref_name}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
-
-      - name: Upload plugin artifacts
+      - name: Upload plugin artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ matrix.plugin }}
           if-no-files-found: error
-          path: plugin/*/build/outputs/*.zip
+          path: plugin/${{ matrix.plugin }}/build/outputs/${{ matrix.plugin }}.zip
