@@ -48,9 +48,9 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const path = require('path');
-          const { create } = require('@actions/artifact');
+          const { DefaultArtifactClient } = require('@actions/artifact');
 
-          const client = create();
+          const client = new DefaultArtifactClient();
           const plugins = fs.readdirSync('plugin', { withFileTypes: true })
             .filter((entry) => entry.isDirectory())
             .map((entry) => entry.name);
@@ -68,10 +68,8 @@ jobs:
               }
 
               console.log(`Uploading ${plugin}`);
-              const result = await client.uploadArtifact(plugin, [zip], process.cwd());
-              if (!result.ok) {
-                throw result.error ?? new Error(`Failed to upload ${plugin}`);
-              }
+              const { id, size } = await client.uploadArtifact(plugin, [zip], process.cwd());
+              console.log(`Uploaded ${plugin} (id: ${id}, bytes: ${size})`);
             }
           })().catch((error) => {
             console.error(error);
