@@ -92,7 +92,7 @@ class PluginSettings(private val settings: SettingsAPI) : BottomSheet() {
             RadioGroup(ctx).apply {
                 orderOptions.forEachIndexed { index, option ->
                     val radio = radios[index]
-                    radio.setOnClickListener {
+                    radio.e {
                         settings.dmOrderMode = option.mode.value
                         radioManager.a(radio)
                         Util.updateChannels()
