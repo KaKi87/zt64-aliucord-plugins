@@ -1,8 +1,11 @@
-version = "1.2.2"
+version = "1.2.3"
 description = "Adds the ability to create categories for DMs, which will come first in the list"
 
 aliucord.changelog.set(
     """
+    # 1.2.3
+    * Fixed DM ordering radio buttons not deselecting the previous option
+
     # 1.2.2
     * Added a DM ordering setting to choose between static order and last activity
 
