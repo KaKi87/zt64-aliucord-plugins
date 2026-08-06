@@ -18,29 +18,10 @@ on:
       - "**.gradle.kts"
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    outputs:
-      plugins: ${{ steps.plugins.outputs.list }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: List plugins
-        id: plugins
-        run: |
-          list=$(find plugin -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          echo "list=$list" >> "$GITHUB_OUTPUT"
-
   build:
-    name: Build ${{ matrix.plugin }}
-    needs: setup
+    name: Build Plugins
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        plugin: ${{ fromJson(needs.setup.outputs.plugins) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -56,14 +37,44 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
-      - name: Build plugin
+      - name: Build plugins
         run: |
           chmod +x ./gradlew
-          ./gradlew ":plugin:${{ matrix.plugin }}:make"
+          ./gradlew make
 
-      - name: Upload plugin artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.plugin }}
-          if-no-files-found: error
-          path: plugin/${{ matrix.plugin }}/build/outputs/${{ matrix.plugin }}.zip
+      - name: Upload plugin artifacts
+        run: |
+          npm install --no-save @actions/artifact@2
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { create } = require('@actions/artifact');
+
+          const client = create();
+          const plugins = fs.readdirSync('plugin', { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name);
+
+          if (plugins.length === 0) {
+            console.error('No plugins found');
+            process.exit(1);
+          }
+
+          (async () => {
+            for (const plugin of plugins) {
+              const zip = path.join('plugin', plugin, 'build', 'outputs', `${plugin}.zip`);
+              if (!fs.existsSync(zip)) {
+                throw new Error(`Missing build output: ${zip}`);
+              }
+
+              console.log(`Uploading ${plugin}`);
+              const result = await client.uploadArtifact(plugin, [zip], process.cwd());
+              if (!result.ok) {
+                throw result.error ?? new Error(`Failed to upload ${plugin}`);
+              }
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
