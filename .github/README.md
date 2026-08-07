@@ -13,14 +13,6 @@ Original `README.md` :
 
 ## Exclusive features
 
-### CI & distribution
-
-- **GitHub Actions builds** for every branch (`Build` on feature branches, `Deploy Dev` on `dev`, `Deploy` on `main`).
-- **Dev prereleases** published to [GitHub Releases](https://github.com/VibedByKaKi/zt64-aliucord-plugins/releases) instead of pushing artifacts to git branches (`builds`, `dev-builds`).
-- **Floating `dev` tag** always points at the latest `dev` build, with an **`updater.json`** for Aliucord plugin auto-updates.
-- **Immutable `dev-<run_number>` prereleases** alongside the floating tag, each with its own `updater.json` pointing at that release's assets.
-- **Cloud Agent environment** (`.cursor/`) for reproducible plugin builds in Cursor.
-
 ### DMCategories enhancements
 
 Available on the `dev` branch only (not yet on `main`) :
@@ -29,26 +21,10 @@ Available on the `dev` branch only (not yet on `main`) :
 - **DM ordering setting** — choose between *Static order* and *Last activity* in plugin settings.
 - **Move up / Move down** — reorder DMs inside a category from the channel context menu.
 
+| Settings | Long-press menu
+| --- | ---
+| ![](../.VibedByKaKi87/1_DMCategories_settings.webp) | ![](../.VibedByKaKi87/2_DMCategories_long_press_menu.webp)
+
 ## Installation
 
-### Dev prereleases (recommended for this fork)
-
 From the [latest `dev` prerelease](https://github.com/VibedByKaKi/zt64-aliucord-plugins/releases/tag/dev), download individual `*.zip` plugin files and move them to `/sdcard/Aliucord/plugins` on your device.
-
-For auto-updates, point your plugin updater at the release's `updater.json` :
-
-```
-https://github.com/VibedByKaKi/zt64-aliucord-plugins/releases/download/dev/updater.json
-```
-
-To pin a specific build, use a versioned prerelease (`dev-<run_number>`) and its matching `updater.json` from the [releases page](https://github.com/VibedByKaKi/zt64-aliucord-plugins/releases).
-
-### Main branch builds
-
-The `Deploy` workflow on `main` publishes build artifacts (plugin zips and `updater.json`) to [GitHub Actions](https://github.com/VibedByKaKi/zt64-aliucord-plugins/actions/workflows/deploy.yml) — download them from the latest successful run's *Artifacts* section.
-
-## Third-party resources
-
-- [Aliucord](https://github.com/Aliucord/Aliucord) — the Discord mobile client mod these plugins target.
-- [zt64/aliucord-plugins](https://github.com/zt64/aliucord-plugins) — upstream plugin collection.
-- [Aliucord plugin development docs](https://docs.aliucord.com/)
