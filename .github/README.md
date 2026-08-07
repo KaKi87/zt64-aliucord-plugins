@@ -4,7 +4,7 @@
 [![](https://shields.kaki87.net/badge/git.kaki87.net-mirror-green?style=flat&logo=forgejo)](https://git.kaki87.net/VibedByKaKi/zt64-aliucord-plugins)
 [![](https://shields.kaki87.net/gitea/stars/VibedByKaKi/zt64-aliucord-plugins?gitea_url=https%3A%2F%2Fgit.kaki87.net&logo=forgejo)](https://git.kaki87.net/VibedByKaKi/zt64-aliucord-plugins)
 
-# Aliucord Plugins, AI-augmented
+# zt64's Aliucord Plugins, AI-augmented
 
 Original `README.md` :
 - [on `main` branch synced with upstream](https://github.com/VibedByKaKi/zt64-aliucord-plugins/blob/main/README.md) ;
