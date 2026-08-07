@@ -9,7 +9,7 @@
 Original `README.md` :
 - [on `main` branch synced with upstream](https://github.com/VibedByKaKi/zt64-aliucord-plugins/blob/main/README.md) ;
 - [on `dev` branch at fork time](https://github.com/VibedByKaKi/zt64-aliucord-plugins/blob/e25b9b12c60571e07cb742e52862a1aa247a913a/README.md) ;
-- [on upstream `builds` branch](https://github.com/zt64/aliucord-plugins/blob/builds/README.md).
+- [on upstream `main` branch](https://github.com/zt64/aliucord-plugins/blob/main/README.md).
 
 ## Exclusive features
 
